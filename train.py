@@ -118,13 +118,15 @@ def train_net(net,
                         histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
                         histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
-                    val_score = evaluate(net, val_loader, device)
-                    scheduler.step(val_score)
+                    TPR , FPR, IoU = evaluate(net, val_loader, device)
+                    scheduler.step(TPR)
 
-                    logging.info('Validation Dice score: {}'.format(val_score))
+                    logging.info(f'Validation scores - TPR:{TPR}, FPR:{FPR}, IoU:{IoU}')
                     experiment.log({
                         'learning rate': optimizer.param_groups[0]['lr'],
-                        'validation Dice': val_score,
+                        'validation TPR': TPR,
+                        'validation FPR': FPR,
+                        'validation IoU': IoU,
                         'images': wandb.Image(images[0].cpu()),
                         'masks': {
                             'true': wandb.Image(true_masks[0].float().cpu()),
@@ -160,7 +162,7 @@ if __name__ == '__main__':
     args = get_args()
 
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Using device {device}')
 
     # Change here to adapt to your data
